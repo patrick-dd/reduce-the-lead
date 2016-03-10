@@ -181,6 +181,8 @@ for county_fip in tmp_county_fips[1:]:
 # now looping through the rest of the counties in the rest of the states
 for state_fip in state_fips[1:]:
     print 'downloading data for', state_dict[state_fip]
+    if state_dict[state_fip] == 'Kansas':
+        pass
     df_tmp = pd.DataFrame(
         c.acs5.state_county(
             vars_acs_block.values(),
