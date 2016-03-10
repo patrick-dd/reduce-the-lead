@@ -1,7 +1,24 @@
 
 # Reduce the lead
 
-The goal is to help local health departments in the United States target their testing efforts to identify the most vulnerable people to lead poisoning.
+The project's goal is to help local health departments in the United States target their testing efforts to identify the most vulnerable people to lead poisoning.
+
+This is a terminal based program that provides a ranking of lead
+poisoning risk among children in a given jurisdiction. The program
+allows the user to focus on regions from the State level to the Census
+block group level. A text file of the ranked regions and a map is
+provided.
+
+Reduce-the-lead relies on some libraries
+
+* Pandas
+* GeoPandas
+* census
+* us
+* pickle
+* sci-kit learn
+
+### Why provide a ranking?
 
 In this analysis I provide priorities for testing at the State, County, Tract and Census block level. This means that the database provides information for Federal, State and County level health practitioners [1]. Specifically, I provide a ranking of regions based on the Federal Government's analysis of what populations are at risk. This ranking is not meant to be the final word, but the start of a conversation.
     
