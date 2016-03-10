@@ -230,7 +230,6 @@ print 'Merging databases'
 df = pd.merge(df_blocks, df_tracts,
         on = ['state', 'county', 'tract'],
         how = 'outer')
-print df 
 #df = pd.merge(df, df_county,
 #        on = ['state', 'county'],
 #        how = 'outer')
