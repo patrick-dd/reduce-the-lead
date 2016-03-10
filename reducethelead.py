@@ -12,6 +12,7 @@ import geopandas as gpd
 import sys
 import us
 from sklearn.decomposition import PCA
+import readline
 
 class reduceTheLead():
     def __init__(self, df):
@@ -70,6 +71,41 @@ class reduceTheLead():
         self.x.sort(columns='first_pca', ascending=False, inplace=True)
         print self.x.head()
 
+    def complete(self, text, complete_state):
+        """
+        tab completion for county names
+        """
+        for cty in self.counties:
+            if cty.startswith(text):
+                if not complete_state:
+                    return cty
+                else:
+                    complete_state -= 1
+
+    def complete_tract(self, text, complete_state):
+        """
+        tab completion for county names
+        """
+        for tr in self.tracts:
+            if tr.startswith(text):
+                if not complete_state:
+                    return tr
+                else:
+                    complete_state -= 1
+
+
+    def county_name_dict(self):
+        """
+        creates a dictionary of county names to fips
+        """
+        df_tmp = pd.read_csv('county_fips.txt')
+        df_tmp = df_tmp[df_tmp.state_fips==self.state_fip]
+        self.county_dict = \
+                df_tmp.set_index('county_name')['county_fips'].to_dict()
+        self.counties = self.county_dict.keys()
+        return 0
+
+
     def group_data(self):
         """
         groups the data into required groups
@@ -84,48 +120,71 @@ class reduceTheLead():
             self.state_key = raw_input('Which State (two letter code):').upper()
             self.state_fip = int(self.state_dict[self.state_key])
             self.key = ['county']
-            print self.state_fip
-            print df.state.head()
             self.df_tmp = df[df['state'] == self.state_fip]
         elif self.geo_level == 'D':
             self.state_key = raw_input('Which State (two letter code):').upper()
-            self.county_fip = raw_input('What is the County FIP code:')
             self.state_fip = int(self.state_dict[self.state_key])
-            self.df_tmp = df[(df['state'] == self.state_fip) & \
-                            (df['county']==self.county_fip)][\
-                            self.explanatory_vars + self.key]
+            self.county_name_dict()
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(self.complete)
+            self.county_name = raw_input('What is the County name (tab complete):')
+            self.county_fip = int(self.county_dict[self.county_name])
             self.key = ['tract']
+            self.df_tmp = self.df[(self.df['state'] == self.state_fip) & \
+                            (self.df['county']==self.county_fip)][\
+                            self.explanatory_vars + self.key]
         elif self.geo_level == 'E':
             self.state_key = raw_input('Which State (two letter code):').upper()
-            self.county_fip = raw_input('What is the County FIP code:')
             self.state_fip = int(self.state_dict[self.state_key])
-            self.df_tmp = df[(df['state'] == self.state_key) & \
-                            (df['county']==self.county_key)][\
-                            self.explanatory_vars + self.key]
-            self.key = 'blocks'
+            self.county_name_dict()
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(self.complete)
+            self.county_name = raw_input('What is the County name (tab complete):')
+            self.county_fip = int(self.county_dict[self.county_name])
+            self.key = 'blockgroup'
+            print self.df.columns.values
+            self.df_tmp = self.df[(self.df['state'] == self.state_fip) & \
+                            (self.df['county']==self.county_fip)][\
+                            self.explanatory_vars + [self.key]\
+                            + ['state', 'county', 'tract']]
         elif self.geo_level == 'F':
             self.state_key = raw_input('Which State (two letter code):').upper()
-            self.county_fip = raw_input('What is the County FIP code:')
-            self.tract_fip = raw_input('What is the Tract FIP code:')
             self.state_fip = int(self.state_dict[self.state_key])
-            self.df_tmp = df[(df['state'] == self.state_fip) & \
-                            (df['county']==self.county_fip) & \
-                            (df['tract']==self.tract_fip)][\
-                            self.explanatory_vars + self.key]
-            self.key = 'blocks'
-        if self.key != 'blocks':
+            self.county_name_dict()
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(self.complete)
+            self.county_name = raw_input('What is the County name (tab complete):')
+            self.county_fip = int(self.county_dict[self.county_name])
+            self.tracts = self.df[(self.df['state']==self.state_fip) &\
+                            (self.df['county']==self.county_fip)][\
+                            'tract'].unique()
+            print self.tracts
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(self.complete_tract)
+            self.tract_fip = int(raw_input('What is the Tract FIPS code:'))
+            self.key = 'blockgroup'
+            print df['tract'].head()
+            print self.tract_fip
+            self.df_tmp = self.df[(self.df['state'] == self.state_fip) & \
+                            (self.df['county']==self.county_fip) & \
+                            (self.df['tract']==self.tract_fip)][\
+                            self.explanatory_vars + [self.key]\
+                            + ['state', 'county', 'tract']]
+        if self.key != 'blockgroup':
             self.df_tmp = self.df_tmp.groupby(self.key)
         else:
-            self.df_tmp.set_index(key=['state', 'county', 'tract', 'block'])
+            self.df_tmp.set_index(['state', 'county', 'tract', 'blockgroup'])
 
-df = pd.read_csv('lead_ranking_data.csv')
-a = reduceTheLead(df)
-a.group_data()
-a.principal_component()
-savefile = raw_input('Do you want to save the file (Y/N):').upper()
-if savefile == 'Y':
-    filename = raw_input('Name the file:')
-    self.x.to_csv(filename + '.csv', 'wb')
-    print 'File saved as ' + filename+'.csv'
+
+if __name__=="__main__":
+    df = pd.read_csv('lead_ranking_data.csv')
+    a = reduceTheLead(df)
+    a.group_data()
+    a.principal_component()
+    savefile = raw_input('Do you want to save the file (Y/N):').upper()
+    if savefile == 'Y':
+        filename = raw_input('Name the file:')
+        a.x.to_csv(filename + '.csv')
+        print 'File saved as ' + filename+'.csv'
 
 
