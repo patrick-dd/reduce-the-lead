@@ -1,8 +1,14 @@
 """
 
-A script to rank regions
+Reduce-the-lead
 
-This is an interactive terminal ~experience~
+This is a script to run Reduce-the-lead. Reduce-the-lead takes user inputs and
+returns a list of the regions at most risk of lead poisoning.
+
+There are options to save the ranking list as a text file, and an associated
+map.
+
+It is assumed there is a datafile called lead_ranking_data.csv
 
 """
 
@@ -13,16 +19,27 @@ import sys
 import us
 from sklearn.decomposition import PCA
 import readline
+import warnings
+
+# ignoring some pandas warnings
+warnings.filterwarnings('ignore')
+
 
 class reduceTheLead():
     def __init__(self, df):
+        """
+
+        initialises an instance of reduceTheLead with pandas dataframe df
+
+        """
         self.df = df
         self.df_dropna = df.dropna(axis=0, how='any')
-        self.explanatory_vars = ['old_houses', 'minority_children', 'foreign_u6',
+        self.explanatory_vars = ['old_houses', 'minority_children', 'u6_foreign',
                                 'poverty_level', 'poverty_foreign']
         self.state_dict = us.states.mapping('abbr', 'fips')
+        print '-------------------------------'
         print 'Welcome to Reduce the Lead'
-        print ''
+        print '-------------------------------'
         allowable_selection = {
                  'A': 'Nationwide across States',
                  'B': 'Nationwide across Counties',
@@ -59,9 +76,10 @@ class reduceTheLead():
         adds a new column of the principal component
         """
         self.x = self.df_tmp[self.explanatory_vars]
-        self.x = pd.DataFrame(self.x.sum())
+        if self.key != 'blockgroup':
+            self.x = pd.DataFrame(self.x.sum())
         self.x.dropna(axis=0, how='any', inplace=True)
-        pca = PCA(n_components=5, whiten=True)
+        pca = PCA(n_components=1, whiten=True)
         pca.fit(self.x.T)
         self.explained_var = pca.explained_variance_ratio_
         self.first_pc = pca.components_[0].T
@@ -69,11 +87,15 @@ class reduceTheLead():
         print '%f percent of the data' % self.explained_var[0]
         self.x['first_pca'] = self.first_pc
         self.x.sort(columns='first_pca', ascending=False, inplace=True)
+        print ''
+        print 'The most at risk regions are '
         print self.x.head()
 
     def complete(self, text, complete_state):
         """
+        
         tab completion for county names
+        
         """
         for cty in self.counties:
             if cty.startswith(text):
@@ -82,21 +104,25 @@ class reduceTheLead():
                 else:
                     complete_state -= 1
 
-    def complete_tract(self, text, complete_state):
+    def complete_tract(self, text, complete_tr_state):
         """
-        tab completion for county names
+        
+        tab completion for tract codes
+        
         """
         for tr in self.tracts:
             if tr.startswith(text):
-                if not complete_state:
+                if not complete_tr_state:
                     return tr
                 else:
-                    complete_state -= 1
+                    complete_tr_state -= 1
 
 
     def county_name_dict(self):
         """
+
         creates a dictionary of county names to fips
+        
         """
         df_tmp = pd.read_csv('county_fips.txt')
         df_tmp = df_tmp[df_tmp.state_fips==self.state_fip]
@@ -108,78 +134,112 @@ class reduceTheLead():
 
     def group_data(self):
         """
-        groups the data into required groups
+        
+        groups the data into required groups, defined by user input
+
         """
         if self.geo_level == 'A':
+            # ranking states across nation
             self.key = ['state']
             self.df_tmp = self.df[self.explanatory_vars + self.key]
         elif self.geo_level == 'B':
+            # ranking counties across nation
             self.key = ['state', 'county']
             self.df_tmp = self.df[self.explanatory_vars + self.key]
         elif self.geo_level == 'C':
+            # ranking counties within a state
+            # choose state
             self.state_key = raw_input('Which State (two letter code):').upper()
             self.state_fip = int(self.state_dict[self.state_key])
             self.key = ['county']
+            # restrict database
             self.df_tmp = df[df['state'] == self.state_fip]
         elif self.geo_level == 'D':
+            # ranking tracts within a county
+            # choose state
             self.state_key = raw_input('Which State (two letter code):').upper()
             self.state_fip = int(self.state_dict[self.state_key])
+            # get dictionary of counties
             self.county_name_dict()
+            # set up tab completion
             readline.parse_and_bind("tab: complete")
             readline.set_completer(self.complete)
+            # choose county
             self.county_name = raw_input('What is the County name (tab complete):')
             self.county_fip = int(self.county_dict[self.county_name])
             self.key = ['tract']
+            # restrict database
             self.df_tmp = self.df[(self.df['state'] == self.state_fip) & \
                             (self.df['county']==self.county_fip)][\
                             self.explanatory_vars + self.key]
         elif self.geo_level == 'E':
+            # choosing blocks within a county
+            # choose state
             self.state_key = raw_input('Which State (two letter code):').upper()
             self.state_fip = int(self.state_dict[self.state_key])
+            # get dictionary of counties
             self.county_name_dict()
+            # set up tab completion
             readline.parse_and_bind("tab: complete")
             readline.set_completer(self.complete)
+            # choose county
             self.county_name = raw_input('What is the County name (tab complete):')
             self.county_fip = int(self.county_dict[self.county_name])
             self.key = 'blockgroup'
-            print self.df.columns.values
+            # restrict database
             self.df_tmp = self.df[(self.df['state'] == self.state_fip) & \
                             (self.df['county']==self.county_fip)][\
                             self.explanatory_vars + [self.key]\
                             + ['state', 'county', 'tract']]
         elif self.geo_level == 'F':
+            # choosing blocks within a tract
+            # choose state
             self.state_key = raw_input('Which State (two letter code):').upper()
             self.state_fip = int(self.state_dict[self.state_key])
+            # get dictionary of counties
             self.county_name_dict()
+            # set up tab completion
             readline.parse_and_bind("tab: complete")
             readline.set_completer(self.complete)
+            # choose county
             self.county_name = raw_input('What is the County name (tab complete):')
             self.county_fip = int(self.county_dict[self.county_name])
+            # get list of string of tract codes
             self.tracts = self.df[(self.df['state']==self.state_fip) &\
                             (self.df['county']==self.county_fip)][\
                             'tract'].unique()
-            print self.tracts
+            self.tracts = [str(s) for s in self.tracts]
+            # set up tab completion for tracts
             readline.parse_and_bind("tab: complete")
             readline.set_completer(self.complete_tract)
-            self.tract_fip = int(raw_input('What is the Tract FIPS code:'))
+            # choose tract
+            self.tract_fip = raw_input('What is the Tract FIPS code:')
+            self.tract_fip = int(self.tract_fip)
             self.key = 'blockgroup'
-            print df['tract'].head()
-            print self.tract_fip
+            # restrict database
             self.df_tmp = self.df[(self.df['state'] == self.state_fip) & \
                             (self.df['county']==self.county_fip) & \
                             (self.df['tract']==self.tract_fip)][\
                             self.explanatory_vars + [self.key]\
                             + ['state', 'county', 'tract']]
         if self.key != 'blockgroup':
+            # group by regions
             self.df_tmp = self.df_tmp.groupby(self.key)
         else:
-            self.df_tmp.set_index(['state', 'county', 'tract', 'blockgroup'])
+            # set index so block groups are unique
+            self.df_tmp.set_index([self.key] +
+                                ['state', 'county', 'tract'],
+                                inplace=True)
 
 
 if __name__=="__main__":
+    # load data
     df = pd.read_csv('lead_ranking_data.csv')
+    # create an instance
     a = reduceTheLead(df)
+    # group the data
     a.group_data()
+    # create a unique ranking
     a.principal_component()
     savefile = raw_input('Do you want to save the file (Y/N):').upper()
     if savefile == 'Y':
