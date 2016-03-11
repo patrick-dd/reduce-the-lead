@@ -34,6 +34,9 @@ After creating the ``census_api.ini`` file, you can run
 To run Reduce-the-lead, simply type ``python reducethelead.py`` at the
 command line.
 
+To see how ``reducethelead.py`` operates, look at the
+``example_reducingthelead.ipynb`` IPython notebook.
+
 ### Why provide a ranking?
 
 The motivation for this analysis is the point that in the United States
@@ -53,14 +56,14 @@ I rely on the CDC to determine which groups are at risk.
 The CDC defines children from the following groups as 
 [at a higher risk](http://www.cdc.gov/nceh/lead/tips/populations.htm)
 
-- ~~poor~~
-    - ~~members of racial-ethnic minority groups~~
-    - ~~recent immigrants~~
-    - ~~live in older, poorly maintained rental properties~~
-    - ~~have parents who are exposed to lead at work~~
+    - poor
+    - members of racial-ethnic minority groups
+    - recent immigrants
+    - live in older, poorly maintained rental properties
+    - refugees
+    - children adopted from other countries
+    - have parents who are exposed to lead at work, or
     - pregnant woman
-    - refugees, or
-    - ~~children adopted from other countries~~
 
 In this analysis, I will collect data that best approximates these groups. 
 
@@ -71,6 +74,10 @@ group contains between 600 and 3000 people. The cost is that the
 information is not immediate. The data can be interpreted as five year
 averages. Reduce-the-lead results should be used with caution in rapidly
 changing communities.
+
+In this version, I have data that approximates the first six of these
+groups. Data on parents' jobs or pregnancy was not available at a low
+enough spatial resolution.
 
 ### How does Reduce-the-lead generate a single ranking from 8 dimensions?
 
