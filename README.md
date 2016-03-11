@@ -29,7 +29,7 @@ key: <<YOUR-CENSUS-KEY>>
 ```
 
 After creating the ``census_api.ini`` file, you can run
-``data_download.py`` to do its magic.
+``data_download.py`` to do its magic. Or you can unzip ``data.zip``.
 
 To run Reduce-the-lead, simply type ``python reducethelead.py`` at the
 command line.
