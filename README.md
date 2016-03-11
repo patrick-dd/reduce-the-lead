@@ -79,20 +79,15 @@ In this version, I have data that approximates the first six of these
 groups. Data on parents' jobs or pregnancy was not available at a low
 enough spatial resolution.
 
-### How does Reduce-the-lead generate a single ranking from 8 dimensions?
+### How does Reduce-the-lead generate a single ranking from 6 dimensions?
 
-A problem with providing information along 8 dimensions is that we're 
+A problem with providing information along 6 dimensions is that we're 
 [unlikely to obtain a single ranking of districts to visit.](http://en.wikipedia.org/wiki/arrow%27s_impossibility_theorem) 
 As a first attempt at resolving this, I will provide a ranking based on the 
 linear combination of these dimensions that explains most of the variation 
 in the data. Specifically, I'll take the first component of a principal 
-component analysis and rank census blocks based on this. Because laws vary 
-at the State level, I'll run the analysis for each State. This is not a 
+component analysis and rank regions. This is not a 
 'best' ranking, the aim is to start the conversation.
-
-TL;DR: with [Principal Components
-Analysis](http://en.wikipedia.org/wiki/principal_components_analysis).
-
 
 Reduce-the-lead can augment the work of 
 health departments that have good testing procedures. For instance, it is 
